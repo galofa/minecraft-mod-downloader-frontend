@@ -7,6 +7,10 @@ export default function MinecraftModDownloader() {
     const [searchQuery, setSearchQuery] = useState("");
     const [isDownloading, setIsDownloading] = useState(false);
     const [file, setFile] = useState<File | null>(null);
+    const [downloadResults, setDownloadResults] = useState<any[]>([]);
+    const [currentMod, setCurrentMod] = useState<string | null>(null);
+    const [progress, setProgress] = useState<number>(0);
+
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -33,6 +37,9 @@ export default function MinecraftModDownloader() {
         }
 
         setIsDownloading(true);
+        setCurrentMod(null);
+        setDownloadResults([]);
+        setProgress(0);
 
         try {
             const formData = new FormData();
@@ -51,9 +58,20 @@ export default function MinecraftModDownloader() {
 
             const data = await response.json();
 
-            console.log("Download results:", data);
+            const total = data.results.length;
+            let completed = 0;
 
-            alert("Download process complete. Check backend logs and downloads folder.");
+            for (const result of data.results) {
+                setCurrentMod(result.url);
+                completed++;
+                setProgress(Math.round((completed / total) * 100));
+                await new Promise((r) => setTimeout(r, 300)); // just for smoother progress UI
+            }
+
+            setDownloadResults(data.results);
+            setCurrentMod(null);
+
+            console.log("Download results:", data);
 
         } catch (error: unknown) {
             if (error instanceof Error) {
@@ -67,6 +85,7 @@ export default function MinecraftModDownloader() {
             setIsDownloading(false);
         }
     };
+
 
     return (
         <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 text-white">
@@ -134,7 +153,6 @@ export default function MinecraftModDownloader() {
                             </label>
 
                             <div className="flex items-center w-full rounded-md border border-green-600 bg-slate-700 px-3 py-2 relative">
-                                {/* Clickable file area */}
                                 <div className="flex items-center flex-grow relative z-10 cursor-pointer">
                                     <FaPlus className="text-green-300 mr-3" />
                                     <span className="text-white truncate">
@@ -150,7 +168,6 @@ export default function MinecraftModDownloader() {
                                     />
                                 </div>
 
-                                {/* Trash icon (clickable) */}
                                 {file && (
                                     <button
                                         onClick={handleRemoveFile}
@@ -176,6 +193,54 @@ export default function MinecraftModDownloader() {
                         >
                             {isDownloading ? "Downloading..." : "Download Mods"}
                         </button>
+
+                        {/* Current downloading mod */}
+                        {isDownloading && currentMod && (
+                            <div className="mt-4 text-green-200 font-medium">
+                                Currently downloading:{" "}
+                                <a href={currentMod} target="_blank" rel="noopener noreferrer" className="underline">
+                                    {currentMod}
+                                </a>
+                            </div>
+                        )}
+
+                        {/* Progress bar */}
+                        {isDownloading && (
+                            <div className="w-full bg-green-900/50 rounded-full h-4 mt-3">
+                                <div
+                                    className="bg-green-400 h-4 rounded-full transition-all duration-300 ease-in-out"
+                                    style={{ width: `${progress}%` }}
+                                />
+                            </div>
+                        )}
+
+                        {/* Failed mods list */}
+                        {!isDownloading && downloadResults.length > 0 && (
+                            <div className="mt-8">
+                                <h3 className="text-xl font-semibold text-red-300 mb-2">❌ Mods with no compatible version:</h3>
+                                <ul className="list-disc pl-6 space-y-1">
+                                    {downloadResults
+                                        .filter((r) => !r.success)
+                                        .map((fail, index) => {
+                                            const link = fail.url.endsWith("/versions") ? fail.url : `${fail.url}/versions`;
+                                            return (
+                                                <li key={index}>
+                                                    <a
+                                                        href={link}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-red-400 hover:underline"
+                                                    >
+                                                        {link}
+                                                    </a>{" "}
+                                                    – {fail.message}
+                                                </li>
+                                            );
+                                        })}
+                                </ul>
+                            </div>
+                        )}
+
                     </section>
                 </div>
             </main>
