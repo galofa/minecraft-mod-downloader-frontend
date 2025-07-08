@@ -160,13 +160,13 @@ export default function MinecraftModDownloader() {
                         </div>
 
                         {/* File input */}
-                        <div className="mb-6">
+                        <div className="mb-6 relative z-0">
                             <div className="flex items-center gap-2">
                                 <label htmlFor="modsFile" className="block mb-2 font-medium text-green-300">
                                     Upload .txt file with mod URLs
                                 </label>
 
-                                <div className="group relative translate-y-[-2px]">
+                                <div className="group relative translate-y-[-2px] z-50">
                                     <svg 
                                         className="w-4 h-4 text-green-400 cursor-pointer" 
                                         fill="none" 
@@ -195,8 +195,8 @@ export default function MinecraftModDownloader() {
                                 </div>
                             </div>
 
-                            <div className="flex items-center w-full rounded-md border border-green-600 bg-slate-700 px-3 py-2 relative">
-                                <div className="flex items-center flex-grow relative z-10 cursor-pointer">
+                            <div className="flex items-center w-full rounded-md border border-green-600 bg-slate-700 px-3 py-2 relative z-10">
+                                <div className="flex items-center flex-grow relative cursor-pointer">
                                     <FaPlus className="text-green-300 mr-3" />
                                     <span className="text-white truncate">
                                         {file ? file.name : "No file selected"}
