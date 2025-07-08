@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { FaPlus, FaTrash } from "react-icons/fa";
 
 export default function MinecraftModDownloader() {
+    // State
     const [selectedVersion, setSelectedVersion] = useState("");
     const [selectedLoader, setSelectedLoader] = useState("");
     const [isDownloading, setIsDownloading] = useState(false);
@@ -11,18 +12,22 @@ export default function MinecraftModDownloader() {
     const [progress, setProgress] = useState<number>(0);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+    // Constants
     const minecraftVersions = ['1.21.7', '1.21.6', '1.21.5', '1.21.4', '1.21.3'];
     const modLoaders = ["Forge", "NeoForge", "Fabric", "Quilt"];
 
+    // Handle file change
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files?.[0]) setFile(e.target.files[0]);
     };
 
+    // Handle remove file
     const handleRemoveFile = () => {
         setFile(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
+    // Handle download
     const handleDownload = async () => {
         if (!selectedVersion || !selectedLoader || !file) {
             alert("Please select Minecraft version, mod loader and upload a .txt file.");
@@ -35,23 +40,28 @@ export default function MinecraftModDownloader() {
         setProgress(0);
 
         try {
+            // Create form data
             const formData = new FormData();
             formData.append("mcVersion", selectedVersion);
             formData.append("modLoader", selectedLoader);
             formData.append("modsFile", file);
 
+            // Upload mods
             const uploadRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/upload-mods`, {
                 method: "POST",
                 body: formData,
             });
 
+            // Get job ID and total mods
             const { jobId, totalMods } = await uploadRes.json();
             const results: any[] = [];
             let completed = 0;
             const progressPerMod = 100 / totalMods;
 
+            // Create event source
             const eventSource = new EventSource(`${import.meta.env.VITE_API_BASE_URL}/progress/${jobId}`);
 
+            // Handle message
             eventSource.onmessage = (e) => {
                 const result = JSON.parse(e.data);
                 results.push(result);
@@ -60,12 +70,14 @@ export default function MinecraftModDownloader() {
                 setProgress(Math.min(Math.round(completed * progressPerMod), 100));
             };
 
+            // Handle done
             eventSource.addEventListener("done", (e) => {
                 const { zipUrl } = JSON.parse(e.data || "{}");
 
                 if (zipUrl) {
+                    // Create anchor element
                     const a = document.createElement("a");
-                    a.href = zipUrl + "?t=" + Date.now(); // prevent caching
+                    a.href = zipUrl + "?t=" + Date.now();
                     a.download = "mods.zip";
                     a.target = "_blank";
                     a.rel = "noopener noreferrer";
@@ -81,12 +93,14 @@ export default function MinecraftModDownloader() {
                 setIsDownloading(false);
             });
 
+            // Handle error
             eventSource.onerror = () => {
                 eventSource.close();
                 setIsDownloading(false);
                 alert("Connection lost during download.");
             };
         } catch (err: any) {
+            // Error
             alert("Error: " + (err?.message || "Unknown"));
             setIsDownloading(false);
         }
