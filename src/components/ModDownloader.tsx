@@ -257,7 +257,7 @@ export default function MinecraftModDownloader() {
                         )}
 
                         {/* Failures */}
-                        {!isDownloading && downloadResults.length > 0 && (
+                        {!isDownloading && downloadResults.length > 0 && downloadResults.some(r => !r.success) && (
                             <div className="mt-8">
                                 <h3 className="text-xl font-semibold text-red-300 mb-2">❌ Mods with no compatible version:</h3>
                                 <ul className="list-disc pl-6 space-y-1">
