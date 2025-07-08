@@ -13,7 +13,7 @@ export default function MinecraftModDownloader() {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     // Constants
-    const minecraftVersions = ['1.21.7', '1.21.6', '1.21.5', '1.21.4', '1.21.3'];
+    const minecraftVersions = ['1.21.7', '1.21.6', '1.21.5', '1.21.4', '1.21.3', '1.21.2', '1.21.1', '1.21', '1.20.4', '1.20.3', '1.20.2', '1.20.1', '1.20', '1.19.4', '1.19.3', '1.19.2', '1.19.1', '1.19', '1.18.2', '1.18.1', '1.18', '1.17.1', '1.17', '1.16.5', '1.16.4', '1.16.3', '1.16.2', '1.16.1', '1.15.2', '1.15.1', '1.15', '1.14.4', '1.14.3', '1.14.2', '1.14.1', '1.14', '1.13.2', '1.13.1', '1.13', '1.12.2', '1.12.1', '1.12', '1.11.2', '1.11.1', '1.11', '1.10.2', '1.10.1', '1.10.0', '1.9.4', '1.9.3', '1.9.2', '1.9.1', '1.9', '1.8.9', '1.8.8', '1.8.7', '1.8.6', '1.8.5', '1.8.4', '1.8.3', '1.8.2', '1.8.1', '1.8', '1.7.10', '1.7.9', '1.7.8', '1.7.7', '1.7.6', '1.7.5', '1.7.4', '1.7.2', '1.6.2', '1.6.1', '1.5.2', '1.5.1', '1.5', '1.4.7', '1.4.6', '1.4.5', '1.4.4', '1.4.2', '1.3.2', '1.3.1', '1.2.5', '1.2.4', '1.2.3', '1.2.2', '1.2.1', '1.1', '1.0'];
     const modLoaders = ["Forge", "NeoForge", "Fabric", "Quilt"];
 
     // Handle file change
@@ -112,13 +112,13 @@ export default function MinecraftModDownloader() {
                 <div className="max-w-4xl mx-auto">
                     <header className="mb-8 text-center">
                         <div className="inline-flex items-center gap-3 mb-3">
-                            <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center shadow-lg font-bold text-xl">
+                            <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center shadow-lg font-bold text-4xl">
                                 📦
                             </div>
-                            <h1 className="text-4xl font-bold tracking-tight">Minecraft Mod Downloader</h1>
+                            <h1 className="text-4xl font-bold tracking-tight">BulkMod</h1>
                         </div>
                         <p className="text-green-300 text-lg">
-                            Discover and download the best mods for your Minecraft experience
+                            Download in bulk the best mods for your Minecraft experience
                         </p>
                     </header>
 
@@ -161,9 +161,40 @@ export default function MinecraftModDownloader() {
 
                         {/* File input */}
                         <div className="mb-6">
-                            <label htmlFor="modsFile" className="block mb-2 font-medium text-green-300">
-                                Upload .txt file with mod URLs
-                            </label>
+                            <div className="flex items-center gap-2">
+                                <label htmlFor="modsFile" className="block mb-2 font-medium text-green-300">
+                                    Upload .txt file with mod URLs
+                                </label>
+
+                                <div className="group relative translate-y-[-2px]">
+                                    <svg 
+                                        className="w-4 h-4 text-green-400 cursor-pointer" 
+                                        fill="none" 
+                                        stroke="currentColor" 
+                                        strokeWidth="2" 
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle cx="12" cy="12" r="10" stroke="currentColor" />
+                                        <line x1="12" y1="8" x2="12" y2="8" stroke="currentColor" strokeLinecap="round" />
+                                        <line x1="12" y1="12" x2="12" y2="16" stroke="currentColor" strokeLinecap="round" />
+                                    </svg>
+
+                                    <div className="
+                                        absolute left-full top-1/2 -translate-y-1/2 ml-2
+                                        z-50 w-64 p-3 text-xs text-gray-300 
+                                        bg-gray-800 border border-gray-700 rounded shadow-lg 
+                                        hidden group-hover:block
+                                        pointer-events-none
+                                    ">
+                                        <p className="font-semibold text-white mb-2">Only Modrinth URLs are currently supported.</p>
+                                        <p className="text-white mb-1">Example input:</p>
+                                        <p className="text-green-400">https://modrinth.com/mod/carpet</p>
+                                        <p className="text-green-400">https://modrinth.com/mod/sodium</p>
+                                        <p className="text-gray-400 mt-1">(one URL per line)</p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="flex items-center w-full rounded-md border border-green-600 bg-slate-700 px-3 py-2 relative">
                                 <div className="flex items-center flex-grow relative z-10 cursor-pointer">
                                     <FaPlus className="text-green-300 mr-3" />
@@ -179,6 +210,7 @@ export default function MinecraftModDownloader() {
                                         className="absolute inset-0 opacity-0 cursor-pointer"
                                     />
                                 </div>
+
                                 {file && (
                                     <button
                                         onClick={handleRemoveFile}
@@ -255,7 +287,7 @@ export default function MinecraftModDownloader() {
             </main>
 
             <footer className="text-center text-green-300/60 text-sm mb-4">
-                Made for Minecraft enthusiasts • Always use trusted mod sources
+                Made for Minecraft enthusiasts • Use only verified mods
             </footer>
         </div>
     );
