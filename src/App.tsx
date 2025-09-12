@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import ModDownloader from "./components/modDownloader/ModDownloader";
 import ModSearch from "./components/modSearch/ModSearch";
+import PlaylistsPage from "./components/modSearch/PlaylistsPage";
 import NavBar from "./components/common/NavBar";
 import LandingPage from "./components/common/LandingPage";
 import NotFound from "./components/common/NotFound";
@@ -34,6 +35,14 @@ export default function App() {
                 element={
                   <ProtectedRoute>
                     <ModSearch />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/playlists" 
+                element={
+                  <ProtectedRoute>
+                    <PlaylistsPage />
                   </ProtectedRoute>
                 } 
               />
