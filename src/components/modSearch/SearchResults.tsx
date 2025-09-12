@@ -1,6 +1,6 @@
 import React from "react";
-import ModCard from "./ModCard";
-import { ModrinthProject } from "./types";
+import ModCard from "../modLists/ModCard";
+import { ModrinthProject } from "../modLists/types";
 
 interface SearchResultsProps {
   results: ModrinthProject[];

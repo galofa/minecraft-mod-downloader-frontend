@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import SearchHeader from "./SearchHeader";
 import SearchResults from "./SearchResults";
 import Footer from "../common/Footer";
-import { ModrinthProject } from "./types";
+import { ModrinthProject } from "../modLists/types";
 import { Card, CardContent } from "../ui";
 
 
