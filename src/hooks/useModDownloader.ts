@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useNotification } from '../contexts/NotificationContext';
 
 export function useModDownloader() {
+    const { showNotification } = useNotification();
     const [selectedVersion, setSelectedVersion] = useState("");
     const [selectedLoader, setSelectedLoader] = useState("");
     const [isDownloading, setIsDownloading] = useState(false);
@@ -11,7 +13,7 @@ export function useModDownloader() {
 
     const handleDownload = async () => {
         if (!selectedVersion || !selectedLoader || !file) {
-            alert("Please select Minecraft version, mod loader and upload a .txt file.");
+            showNotification("Please select Minecraft version, mod loader and upload a .txt file.", 'warning');
             return;
         }
 
@@ -78,11 +80,11 @@ export function useModDownloader() {
             eventSource.onerror = () => {
                 eventSource.close();
                 setIsDownloading(false);
-                alert("Connection lost during download.");
+                showNotification("Connection lost during download.", 'error');
             };
         } catch (err: any) {
             // Error
-            alert("Error: " + (err?.message || "Unknown"));
+            showNotification("Error: " + (err?.message || "Unknown"), 'error');
             setIsDownloading(false);
         }
     };
