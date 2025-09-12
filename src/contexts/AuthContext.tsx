@@ -78,7 +78,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      console.log('Attempting login...');
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: {
@@ -87,12 +86,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         body: JSON.stringify({ email, password }),
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-
       if (!response.ok) {
         const text = await response.text();
-        console.log('Error response text:', text);
         
         let errorMessage = 'Login failed';
         try {
@@ -107,7 +102,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const text = await response.text();
-      console.log('Success response text:', text);
       
       let data;
       try {
@@ -128,7 +122,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (username: string, email: string, password: string) => {
     try {
-      console.log('Attempting registration...');
       const response = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: {
@@ -137,12 +130,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         body: JSON.stringify({ username, email, password }),
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-
       if (!response.ok) {
         const text = await response.text();
-        console.log('Error response text:', text);
         
         let errorMessage = 'Registration failed';
         try {
@@ -157,7 +146,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const text = await response.text();
-      console.log('Success response text:', text);
       
       let data;
       try {
