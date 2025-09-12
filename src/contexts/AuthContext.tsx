@@ -35,6 +35,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Add a new state for fatal errors
+  const [fatalError, setFatalError] = useState<string | null>(null);
 
   // Use relative URLs to work with Vite proxy
   const API_BASE = '/api';
@@ -58,7 +60,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           'Content-Type': 'application/json',
         },
       });
-
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
@@ -66,9 +67,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Token is invalid, remove it
         localStorage.removeItem('token');
         setToken(null);
+        setFatalError(null); // Not a fatal error, just unauthenticated
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
+      setFatalError('Could not connect to backend. Please check your server and try again.');
       localStorage.removeItem('token');
       setToken(null);
     } finally {
@@ -192,6 +195,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     isLoading,
   };
+
+  if (fatalError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white">
+        <h1 className="text-2xl font-bold text-red-400 mb-4">Backend Connection Error</h1>
+        <p className="mb-4">{fatalError}</p>
+        <p className="text-slate-400">Is your backend running? Is the API URL correct?</p>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={value}>
