@@ -44,21 +44,12 @@ export default function ModSearch() {
       offset: '0',
       sort: sort
     });
-    
-    console.log('🔍 Search request:', {
-      query: debouncedQuery,
-      sort: sort,
-      view: view,
-      url: `${API_BASE}/search-mods?${params.toString()}`
-    });
-    
+
     fetch(`${API_BASE}/search-mods?${params.toString()}`)
       .then((res) => {
-        console.log('Response status:', res.status);
         return res.json();
       })
       .then((data) => {
-        console.log('Response data:', data);
         if (Array.isArray(data.hits)) {
           setResults(
             data.hits.map((mod: any) => ({
