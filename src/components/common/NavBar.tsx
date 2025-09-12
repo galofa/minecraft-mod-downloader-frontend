@@ -39,6 +39,7 @@ export default function NavBar() {
           <>
             <Link to="/search" className="text-green-200 hover:text-green-400 font-medium">Search</Link>
             <Link to="/download" className="text-green-200 hover:text-green-400 font-medium">Download</Link>
+            <Link to="/playlists" className="text-green-200 hover:text-green-400 font-medium">Playlists</Link>
           </>
         )}
         
