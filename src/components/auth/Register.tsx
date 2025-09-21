@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, Input, Card, CardContent, Alert } from '../ui';
+import Footer from '../common/Footer';
 
 export default function Register() {
   const [username, setUsername] = useState('');
@@ -128,6 +129,7 @@ export default function Register() {
           </Card>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, Input, Card, CardContent, Alert } from '../ui';
+import Footer from '../common/Footer';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -87,6 +88,7 @@ export default function Login() {
           </Card>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }
