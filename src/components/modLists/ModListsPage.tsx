@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { ModList, CreateModListData } from './types';
 import modListService from '../../services/modListService';
 import { Button, Modal, Input, Alert, Card } from '../ui';
-import { FiPlus, FiEdit3, FiTrash2, FiEye, FiEyeOff, FiMusic, FiUpload, FiDownload } from 'react-icons/fi';
+import ConfirmationModal from '../ui/ConfirmationModal';
+import { FiPlus, FiEdit3, FiTrash2, FiEye, FiEyeOff, FiPackage, FiUpload, FiDownload, FiList } from 'react-icons/fi';
 import { useNotification } from '../../contexts/NotificationContext';
+import ModListDetail from './ModListDetail';
+import Footer from '../common/Footer';
 
 const MinecraftBlock = () => (
   <svg width="64" height="64" viewBox="0 0 64 64" fill="none" className="mx-auto mb-4" xmlns="http://www.w3.org/2000/svg">
@@ -20,7 +23,13 @@ export default function ModListsPage() {
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [selectedModList, setSelectedModList] = useState<ModList | null>(null);
+  const [modListToDelete, setModListToDelete] = useState<ModList | null>(null);
+  const [importData, setImportData] = useState<{ name: string; modUrls: string[] } | null>(null);
   const [newModListData, setNewModListData] = useState<CreateModListData>({
     name: '',
     description: '',
@@ -88,18 +97,27 @@ export default function ModListsPage() {
   };
 
   const handleDeleteModList = async (modListId: number) => {
-    if (!confirm('Are you sure you want to delete this mod list? This action cannot be undone.')) {
-      return;
-    }
+    const modlist = modlists.find(m => m.id === modListId);
+    setModListToDelete(modlist || null);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteModList = async () => {
+    if (!modListToDelete) return;
+    
     try {
       setLoading(true);
-      await modListService.deleteModList(modListId);
-      setModLists(modlists.filter(m => m.id !== modListId));
+      await modListService.deleteModList(modListToDelete.id);
+      setModLists(modlists.filter(m => m.id !== modListToDelete.id));
       setError(null);
+      showNotification(`"${modListToDelete.name}" deleted successfully`, 'success');
     } catch (err) {
       setError('Failed to delete mod list');
+      showNotification('Failed to delete mod list', 'error');
     } finally {
       setLoading(false);
+      setShowDeleteModal(false);
+      setModListToDelete(null);
     }
   };
 
@@ -113,6 +131,11 @@ export default function ModListsPage() {
     setShowEditModal(true);
   };
 
+  const openDetailModal = (modlist: ModList) => {
+    setSelectedModList(modlist);
+    setShowDetailModal(true);
+  };
+
   const openCreateModal = () => {
     setNewModListData({ name: '', description: '', isPublic: false });
     setShowCreateModal(true);
@@ -121,7 +144,17 @@ export default function ModListsPage() {
   // Export mod list as .modlist (base64 encoded)
   const handleExport = (modList: ModList) => {
     try {
-      const content = modList.mods.map(mod => mod.modSlug.startsWith('http') ? mod.modSlug : `https://modrinth.com/mod/${mod.modSlug}`).join('\n');
+      const content = modList.mods.map(mod => {
+        if (mod.modSlug.startsWith('http')) {
+          return mod.modSlug;
+        }
+        // Determine if it's a plugin or mod based on common plugin names
+        const isPlugin = mod.modSlug.includes('plugin') || 
+                        mod.modSlug.includes('worldedit') || 
+                        mod.modSlug.includes('chunky') ||
+                        mod.modSlug.includes('plugin');
+        return `https://modrinth.com/${isPlugin ? 'plugin' : 'mod'}/${mod.modSlug}`;
+      }).join('\n');
       const encoded = btoa(unescape(encodeURIComponent(content)));
       const blob = new Blob([encoded], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
@@ -149,38 +182,79 @@ export default function ModListsPage() {
         const text = decodeURIComponent(escape(atob(encoded)));
         const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
         if (lines.length === 0) throw new Error('No mods found in file');
-        // Create a new mod list with imported mods
-        const name = prompt('Name for imported mod list?') || 'Imported Mod List';
-        const mods = lines.map(url => {
-          const slug = url.replace('https://modrinth.com/mod/', '').replace(/\/$/, '');
-          return { modSlug: slug, modTitle: slug, modAuthor: 'Imported' };
+        
+        // Store import data and show name modal
+        setImportData({
+          name: `Imported Mod List ${new Date().toLocaleDateString()}`,
+          modUrls: lines
         });
-        setLoading(true);
-        const newModList = await modListService.createModList({ name, description: 'Imported from file', isPublic: false });
-        for (const mod of mods) {
-          await modListService.addModToModList(newModList.id, mod);
-        }
-        await loadModLists();
-        showNotification('Mod list imported successfully!', 'success');
+        setShowImportModal(true);
       } catch (err) {
-        showNotification('Failed to import mod list', 'error');
-      } finally {
-        setLoading(false);
+        console.error('Import error:', err);
+        showNotification(`Failed to read import file: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
       }
     };
     reader.readAsText(file);
   };
 
+  const handleImportConfirm = async () => {
+    if (!importData) return;
+    
+    try {
+      setImporting(true);
+      setShowImportModal(false);
+      
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+      const response = await fetch(`${API_BASE_URL}/modlists/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          name: importData.name,
+          description: 'Imported from file',
+          modUrls: importData.modUrls
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to import mod list');
+      }
+      
+      const result = await response.json();
+      await loadModLists();
+      showNotification(`Mod list imported successfully! ${result.importedMods}/${result.totalMods} mods imported.`, 'success');
+    } catch (err) {
+      console.error('Import error:', err);
+      showNotification(`Failed to import mod list: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error');
+    } finally {
+      setImporting(false);
+      setImportData(null);
+    }
+  };
+
   if (loading && modlists.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center py-8">Loading mod lists...</div>
+      <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 text-white overflow-x-hidden">
+        <main className="flex-grow p-6 pt-20">
+          <div className="text-center py-8"></div>
+        </main>
+        <Footer />
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-slate-800/90 backdrop-blur-md border border-green-500/30 rounded-lg p-6 flex items-center gap-3 shadow-xl">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
+            <span className="text-white font-medium">Loading mod lists...</span>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 pt-20">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 text-white overflow-x-hidden">
+      <main className="flex-grow p-6 pt-20">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-green-300 mb-2">My Mod Lists</h1>
@@ -192,8 +266,8 @@ export default function ModListsPage() {
             Create Mod List
           </Button>
           <label className="flex items-center gap-2 cursor-pointer">
-            <input type="file" accept=".modlist" onChange={handleImport} className="hidden" />
-            <span className="flex items-center gap-1 px-3 py-2 bg-slate-700 rounded hover:bg-slate-600 transition-colors">
+            <input type="file" accept=".modlist" onChange={handleImport} className="hidden" disabled={importing} />
+            <span className={`flex items-center gap-1 px-3 py-2 rounded transition-colors ${importing ? 'bg-slate-600 cursor-not-allowed' : 'bg-slate-700 hover:bg-slate-600 cursor-pointer'}`}>
               <FiUpload /> Import
             </span>
           </label>
@@ -216,8 +290,8 @@ export default function ModListsPage() {
             Create Your First Mod List
           </Button>
           <label className="flex items-center gap-2 cursor-pointer mt-4 justify-center">
-            <input type="file" accept=".modlist" onChange={handleImport} className="hidden" />
-            <span className="flex items-center gap-1 px-3 py-2 bg-slate-700 rounded hover:bg-slate-600 transition-colors">
+            <input type="file" accept=".modlist" onChange={handleImport} className="hidden" disabled={importing} />
+            <span className={`flex items-center gap-1 px-3 py-2 rounded transition-colors ${importing ? 'bg-slate-600 cursor-not-allowed' : 'bg-slate-700 hover:bg-slate-600 cursor-pointer'}`}>
               <FiUpload /> Import
             </span>
           </label>
@@ -225,91 +299,86 @@ export default function ModListsPage() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {modlists.map((modlist) => (
-            <Card key={modlist.id} className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-green-300 mb-2">
-                    {modlist.name}
-                  </h3>
-                  {modlist.description && (
-                    <p className="text-slate-400 text-sm mb-3">
-                      {modlist.description}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-4 text-sm text-slate-500">
-                    <span className="flex items-center gap-1">
-                      <FiMusic />
-                      {modlist._count?.mods || modlist.mods.length} mods
-                    </span>
-                    <span className="flex items-center gap-1">
-                      {modlist.isPublic ? <FiEye /> : <FiEyeOff />}
-                      {modlist.isPublic ? 'Public' : 'Private'}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2 items-end">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openEditModal(modlist)}
-                    className="flex-1"
-                  >
-                    <FiEdit3 className="mr-2" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => handleDeleteModList(modlist.id)}
-                    className="flex-1"
-                  >
-                    <FiTrash2 className="mr-2" />
-                    Delete
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => handleExport(modlist)}
-                    className="flex-1"
-                  >
-                    <FiDownload className="mr-2" />
-                    Export
-                  </Button>
-                </div>
-              </div>
-              {modlist.mods.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-sm font-medium text-slate-300 mb-2">Recent mods:</h4>
-                  <div className="space-y-2">
-                    {modlist.mods.slice(0, 3).map((mod) => (
-                      <div key={mod.id} className="flex items-center gap-2 p-2 bg-slate-800 rounded">
-                        <img
-                          src={mod.modIconUrl || "/favicon.png"}
-                          alt={mod.modTitle}
-                          className="w-6 h-6 rounded bg-slate-700 object-cover"
-                          onError={(e) => ((e.target as HTMLImageElement).src = "/favicon.png")}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-green-300 truncate">
-                            {mod.modTitle}
-                          </p>
-                          <p className="text-xs text-slate-400">by {mod.modAuthor}</p>
-                        </div>
-                      </div>
-                    ))}
-                    {modlist.mods.length > 3 && (
-                      <p className="text-xs text-slate-500 text-center">
-                        +{modlist.mods.length - 3} more mods
+            <Card key={modlist.id} className="p-6 flex flex-col min-h-[400px]">
+              <div className="flex-1">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-green-300 mb-2">
+                      {modlist.name}
+                    </h3>
+                    {modlist.description && (
+                      <p className="text-slate-400 text-sm mb-3">
+                        {modlist.description}
                       </p>
                     )}
+                    <div className="flex items-center gap-4 text-sm text-slate-500">
+                      <span className="flex items-center gap-1">
+                        <FiPackage />
+                        {modlist._count?.mods || modlist.mods.length} mods
+                      </span>
+                      <span className="flex items-center gap-1">
+                        {modlist.isPublic ? <FiEye /> : <FiEyeOff />}
+                        {modlist.isPublic ? 'Public' : 'Private'}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              )}
-              <div className="flex gap-2">
+                {modlist.mods.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-slate-300 mb-2">Recent mods:</h4>
+                    <div className="space-y-2">
+                      {modlist.mods.slice(0, 3).map((mod) => (
+                        <div key={mod.id} className="flex items-center gap-2 p-2 bg-slate-800 rounded">
+                          <img
+                            src={mod.modIconUrl || "/favicon.svg"}
+                            alt={mod.modTitle}
+                            className="w-6 h-6 rounded bg-slate-700 object-cover"
+                            onError={(e) => ((e.target as HTMLImageElement).src = "/favicon.svg")}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <a
+                              href={`https://modrinth.com/${mod.modSlug.includes('plugin') ? 'plugin' : 'mod'}/${mod.modSlug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm font-medium text-green-300 hover:underline truncate block"
+                            >
+                              {mod.modTitle}
+                            </a>
+                            <p className="text-xs text-slate-400">by {mod.modAuthor}</p>
+                          </div>
+                        </div>
+                      ))}
+                      {modlist.mods.length > 3 && (
+                        <p className="text-xs text-slate-500 text-center">
+                          +{(modlist._count?.mods || modlist.mods.length) - 3} more mods
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2 mt-auto">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openDetailModal(modlist);
+                  }}
+                  className="flex-1"
+                >
+                  <FiList className="mr-2" />
+                  View Mods
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => openEditModal(modlist)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openEditModal(modlist);
+                  }}
                   className="flex-1"
                 >
                   <FiEdit3 className="mr-2" />
@@ -318,7 +387,11 @@ export default function ModListsPage() {
                 <Button
                   variant="danger"
                   size="sm"
-                  onClick={() => handleDeleteModList(modlist.id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDeleteModList(modlist.id);
+                  }}
                   className="flex-1"
                 >
                   <FiTrash2 className="mr-2" />
@@ -435,6 +508,78 @@ export default function ModListsPage() {
           </div>
         </div>
       </Modal>
+      {/* Mod List Detail Modal */}
+      {selectedModList && (
+        <ModListDetail
+          modlist={selectedModList}
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedModList(null);
+          }}
+          onModListUpdated={loadModLists}
+        />
+      )}
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setModListToDelete(null);
+        }}
+        onConfirm={confirmDeleteModList}
+        title="Delete Mod List"
+        message={`Are you sure you want to delete "${modListToDelete?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
+      {/* Import Name Modal */}
+      <Modal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        title="Import Mod List"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Mod List Name"
+            value={importData?.name || ''}
+            onChange={(e) => setImportData(prev => prev ? { ...prev, name: e.target.value } : null)}
+            placeholder="My Imported Mod List"
+            required
+          />
+          <p className="text-sm text-slate-400">
+            Found {importData?.modUrls.length || 0} mods to import
+          </p>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleImportConfirm}
+              disabled={!importData?.name.trim() || importing}
+              className="flex-1"
+            >
+              {importing ? 'Importing...' : 'Import Mod List'}
+            </Button>
+            <Button
+              onClick={() => setShowImportModal(false)}
+              variant="outline"
+              className="flex-1"
+              disabled={importing}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </Modal>
+      {/* Importing Popup */}
+      {importing && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-slate-800/90 backdrop-blur-md border border-green-500/30 rounded-lg p-6 flex items-center gap-3 shadow-xl">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
+            <span className="text-white font-medium">Importing mods...</span>
+          </div>
+        </div>
+      )}
+      </main>
+      <Footer />
     </div>
   );
 }

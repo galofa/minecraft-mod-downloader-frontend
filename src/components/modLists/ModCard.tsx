@@ -16,16 +16,16 @@ export default function ModCard({ mod }: ModCardProps) {
       <div className="flex bg-slate-900 border border-slate-700 rounded-xl p-4 gap-4 shadow hover:shadow-lg transition-shadow items-center">
         {/* Icon */}
         <img
-          src={mod.icon_url || "/favicon.png"}
+          src={mod.icon_url || "/favicon.svg"}
           alt={mod.title}
-          className="w-16 h-16 rounded bg-slate-700 object-cover flex-shrink-0"
-          onError={(e) => ((e.target as HTMLImageElement).src = "/favicon.png")}
+          className="w-16 h-[73px] rounded bg-slate-700 object-cover flex-shrink-0"
+          onError={(e) => ((e.target as HTMLImageElement).src = "/favicon.svg")}
         />
         {/* Main info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
             <a
-              href={`https://modrinth.com/mod/${mod.slug}`}
+              href={`https://modrinth.com/${mod.project_type}/${mod.slug}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xl font-bold text-green-300 hover:underline truncate"
@@ -67,12 +67,12 @@ export default function ModCard({ mod }: ModCardProps) {
             Updated {timeAgo(mod.updated)}
           </span>
         </div>
-        {/* Playlist button */}
+        {/* Modlist button */}
         <button
           className="p-2 rounded-full hover:bg-green-200/10 transition-colors text-green-400 text-2xl focus:outline-none focus:ring-2 focus:ring-green-400 flex-shrink-0"
-          title="Add to Playlist"
+          title="Add to Modlist"
           tabIndex={0}
-          aria-label="Add mod to playlist"
+          aria-label="Add mod to modlist"
           type="button"
           onClick={() => setShowModListSelector(true)}
         >

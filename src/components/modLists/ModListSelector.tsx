@@ -110,10 +110,10 @@ export default function ModListSelector({
         <div className="bg-slate-800 p-3 rounded-lg">
           <div className="flex items-center gap-3">
             <img
-              src={modIconUrl || "/favicon.png"}
+              src={modIconUrl || "/favicon.svg"}
               alt={modTitle}
               className="w-12 h-12 rounded bg-slate-700 object-cover"
-              onError={(e) => ((e.target as HTMLImageElement).src = "/favicon.png")}
+              onError={(e) => ((e.target as HTMLImageElement).src = "/favicon.svg")}
             />
             <div>
               <h4 className="font-semibold text-green-300">{modTitle}</h4>
