@@ -1,10 +1,11 @@
 import React from "react";
 import { Button, ProgressBar } from "../ui";
+import { ModList } from "../modLists/types";
 
 interface DownloadButtonProps {
     selectedVersion: string;
     selectedLoader: string;
-    file: File | null;
+    selectedModList: ModList | null;
     isDownloading: boolean;
     currentMod: string | null;
     progress: number;
@@ -14,7 +15,7 @@ interface DownloadButtonProps {
 export default function DownloadButton({
     selectedVersion,
     selectedLoader,
-    file,
+    selectedModList,
     isDownloading,
     currentMod,
     progress,
@@ -25,7 +26,7 @@ export default function DownloadButton({
             {/* Download button */}
             <Button
                 onClick={onDownload}
-                disabled={!selectedVersion || !selectedLoader || !file || isDownloading}
+                disabled={!selectedVersion || !selectedLoader || !selectedModList || isDownloading}
                 loading={isDownloading}
                 className="w-full p-4 text-lg font-bold"
                 size="lg"

@@ -1,6 +1,6 @@
 import React from "react";
 import VersionSelector from "./VersionSelector";
-import FileUpload from "./FileUpload";
+import ModListSelector from "./ModListSelector";
 import DownloadButton from "./DownloadButton";
 import ResultsDisplay from "./ResultsDisplay";
 import Footer from "../common/Footer";
@@ -14,8 +14,8 @@ export default function MinecraftModDownloader() {
         selectedLoader,
         setSelectedLoader,
         isDownloading,
-        file,
-        setFile,
+        selectedModList,
+        setSelectedModList,
         downloadResults,
         currentMod,
         progress,
@@ -32,9 +32,9 @@ export default function MinecraftModDownloader() {
 
                             <VersionSelector selectedVersion={selectedVersion} setSelectedVersion={setSelectedVersion} selectedLoader={selectedLoader} setSelectedLoader={setSelectedLoader} />
 
-                            <FileUpload file={file} setFile={setFile} />
+                            <ModListSelector selectedModList={selectedModList} onModListSelect={setSelectedModList} />
 
-                            <DownloadButton selectedVersion={selectedVersion} selectedLoader={selectedLoader} file={file} isDownloading={isDownloading} currentMod={currentMod} progress={progress} onDownload={handleDownload} />
+                            <DownloadButton selectedVersion={selectedVersion} selectedLoader={selectedLoader} selectedModList={selectedModList} isDownloading={isDownloading} currentMod={currentMod} progress={progress} onDownload={handleDownload} />
 
                             <ResultsDisplay isDownloading={isDownloading} downloadResults={downloadResults} />
 
