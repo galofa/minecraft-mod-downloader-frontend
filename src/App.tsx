@@ -17,11 +17,11 @@ export default function App() {
   return (
     <NotificationProvider>
       <AuthProvider>
-        <div className="h-screen flex flex-col bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 text-white overflow-hidden">
+        <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-900 via-green-900 to-slate-900 text-white">
           <Router>
             <NavBar />
             <Notification />
-            <div className="flex-grow overflow-hidden">
+            <div className="flex-grow">
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Login />} />
