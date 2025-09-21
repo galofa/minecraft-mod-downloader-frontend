@@ -1,19 +1,20 @@
 import { useState } from "react";
 import { useNotification } from '../contexts/NotificationContext';
+import { ModList } from '../components/modLists/types';
 
 export function useModDownloader() {
     const { showNotification } = useNotification();
     const [selectedVersion, setSelectedVersion] = useState("");
     const [selectedLoader, setSelectedLoader] = useState("");
     const [isDownloading, setIsDownloading] = useState(false);
-    const [file, setFile] = useState<File | null>(null);
+    const [selectedModList, setSelectedModList] = useState<ModList | null>(null);
     const [downloadResults, setDownloadResults] = useState<any[]>([]);
     const [currentMod, setCurrentMod] = useState<string | null>(null);
     const [progress, setProgress] = useState<number>(0);
 
     const handleDownload = async () => {
-        if (!selectedVersion || !selectedLoader || !file) {
-            showNotification("Please select Minecraft version, mod loader and upload a .txt file.", 'warning');
+        if (!selectedVersion || !selectedLoader || !selectedModList) {
+            showNotification("Please select Minecraft version, mod loader and a mod list.", 'warning');
             return;
         }
 
@@ -23,26 +24,46 @@ export function useModDownloader() {
         setProgress(0);
 
         try {
-            // Create form data
-            const formData = new FormData();
-            formData.append("mcVersion", selectedVersion);
-            formData.append("modLoader", selectedLoader);
-            formData.append("modsFile", file);
+            // Create JSON data
+            const requestData = {
+                mcVersion: selectedVersion,
+                modLoader: selectedLoader,
+                modListId: selectedModList.id.toString()
+            };
+
+            console.log("Starting download with:", requestData);
 
             // Upload mods
-            const uploadRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/upload-mods`, {
+            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+            console.log("API URL:", `${API_BASE_URL}/upload-mods-from-list`);
+            
+            const uploadRes = await fetch(`${API_BASE_URL}/upload-mods-from-list`, {
                 method: "POST",
-                body: formData,
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestData),
             });
 
+            console.log("Upload response status:", uploadRes.status);
+            
+            if (!uploadRes.ok) {
+                const errorText = await uploadRes.text();
+                console.error("Upload error response:", errorText);
+                throw new Error(`HTTP error! status: ${uploadRes.status} - ${errorText}`);
+            }
+
             // Get job ID and total mods
-            const { jobId, totalMods } = await uploadRes.json();
+            const responseData = await uploadRes.json();
+            console.log("Upload response data:", responseData);
+            const { jobId, totalMods } = responseData;
             const results: any[] = [];
             let completed = 0;
             const progressPerMod = 100 / totalMods;
 
             // Create event source
-            const eventSource = new EventSource(`${import.meta.env.VITE_API_BASE_URL}/progress/${jobId}`);
+            const eventSource = new EventSource(`${API_BASE_URL}/progress/${jobId}`);
 
             // Handle message
             eventSource.onmessage = (e) => {
@@ -84,6 +105,7 @@ export function useModDownloader() {
             };
         } catch (err: any) {
             // Error
+            console.error("Download error:", err);
             showNotification("Error: " + (err?.message || "Unknown"), 'error');
             setIsDownloading(false);
         }
@@ -96,8 +118,8 @@ export function useModDownloader() {
         selectedLoader,
         setSelectedLoader,
         isDownloading,
-        file,
-        setFile,
+        selectedModList,
+        setSelectedModList,
         downloadResults,
         currentMod,
         progress,
